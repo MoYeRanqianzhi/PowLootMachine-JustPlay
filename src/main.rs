@@ -1163,6 +1163,7 @@ async fn main() -> Result<()> {
         println!("选项:");
         println!("  --threads=<N>   挖矿线程数 (默认: CPU 核心数)");
         println!("  --port=<PORT>   服务端口 (默认: {})", DEFAULT_PORT);
+        println!("  --bind=<ADDR>   绑定地址 (默认: localhost)");
         println!("  --help          显示帮助");
         println!();
         println!("启动后在浏览器控制台粘贴 bridge.js 即可开始挖矿。");
@@ -1182,6 +1183,12 @@ async fn main() -> Result<()> {
         .and_then(|a| a.trim_start_matches("--port=").parse().ok())
         .unwrap_or(DEFAULT_PORT);
 
+    let bind_addr: String = args
+        .iter()
+        .find(|a| a.starts_with("--bind="))
+        .map(|a| a.trim_start_matches("--bind=").to_string())
+        .unwrap_or_else(|| "localhost".to_string());
+
     // 初始化 WASM 引擎
     println!("[*] 初始化 WASM 引擎...");
     let engine = Arc::new(Engine::default());
@@ -1189,12 +1196,12 @@ async fn main() -> Result<()> {
     println!("[*] WASM 模块加载成功 ({} bytes)", WASM_BYTES.len());
 
     println!("[*] 线程数: {}", thread_count);
-    println!("[*] 监听端口: http://localhost:{}", port);
+    println!("[*] 监听: {}:{}", bind_addr, port);
     println!("[*] 兑换码保存: {}", CODE_FILE);
     println!();
     println!("[*] 等待浏览器连接...");
 
-    let listener = TcpListener::bind(format!("127.0.0.1:{}", port)).await?;
+    let listener = TcpListener::bind(format!("{}:{}", bind_addr, port)).await?;
 
     loop {
         let (stream, addr) = listener.accept().await?;
